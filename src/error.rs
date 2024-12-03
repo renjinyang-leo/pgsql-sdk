@@ -7,6 +7,8 @@ use failure::Fail;
 pub enum Error {
     PGErr(#[cause] postgres::Error),
     FFI(#[cause] ffi::IntoStringError),
+    Parse(#[cause] pg_parse::Error),
+    RewriteFailed,
     NotInitialize,
 }
 
@@ -19,6 +21,12 @@ impl From<ffi::IntoStringError> for Error {
 impl From<postgres::Error> for Error {
     fn from(err: postgres::Error) -> Error {
         Error::PGErr(err)
+    }
+}
+
+impl From<pg_parse::Error> for Error {
+    fn from(err: pg_parse::Error) -> Error {
+        Error::Parse(err)
     }
 }
 

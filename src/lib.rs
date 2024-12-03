@@ -18,8 +18,9 @@ pub extern "C" fn init(c_host: *const c_char, c_port: *const c_char, c_username:
 #[no_mangle]
 pub extern "C" fn rewrite(c_sql: *const c_char) -> *const c_char {
     if let Ok(sql) = unsafe { CString::from_raw(c_sql as *mut c_char) }.into_string() {
-        if let Ok(rewrited_sql) = CString::new(sql) {
-            return rewrited_sql.as_ptr();
+        if let Ok(rewrite_sql) = rewrite::rewrite_sql(&sql) {
+            let cstr_rewrite_sql = CString::new(rewrite_sql).unwrap();
+            return cstr_rewrite_sql.as_ptr();
         }
         return std::ptr::null();
     }

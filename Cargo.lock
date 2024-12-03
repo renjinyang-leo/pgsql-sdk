@@ -516,8 +516,10 @@ name = "pgsql-sdk"
 version = "0.1.0"
 dependencies = [
  "failure",
+ "lazy_static",
  "pg_parse",
  "postgres",
+ "regex",
 ]
 
 [[package]]
