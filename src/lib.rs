@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ffi::{c_char, CString}, sync::Mutex};
+use std::{collections::HashMap, ffi::{c_char, CString}, sync::{Arc, Mutex}};
 use metadata::{ConnectInfo, CONN_INFO, TABLE_MATES, TableMeta};
 mod metadata;
 mod rewrite;
@@ -9,7 +9,7 @@ mod error;
 pub extern "C" fn init(c_host: *const c_char, c_port: *const c_char, c_username: *const c_char, c_password: *const c_char, c_database: *const c_char) -> bool {
     if let Ok(conn_info) = ConnectInfo::new(c_host, c_port, c_username, c_password, c_database) {
         unsafe { CONN_INFO = Some(Box::new(conn_info)) };
-        unsafe { TABLE_MATES = Some(Mutex::new(Box::new(HashMap::<String, Box<TableMeta>>::new()))) };
+        unsafe { TABLE_MATES = Some(Mutex::new(Box::new(HashMap::<String, Arc<TableMeta>>::new()))) };
         return false;
     }
     false

@@ -10,6 +10,7 @@ pub enum Error {
     Parse(#[cause] pg_parse::Error),
     RewriteFailed,
     NotInitialize,
+    NoMatchEncryptType
 }
 
 impl From<ffi::IntoStringError> for Error {

@@ -1,12 +1,13 @@
-use std::{collections::HashMap, ffi::{c_char, CString}, fmt::format, sync::{Arc, Mutex}};
+use std::{collections::HashMap, ffi::{c_char, CString}, sync::{Arc, Mutex}};
 use postgres::Client;
 
 use crate::error::{Result, Error};
 
-struct Column {
-    col_name: String,
-    attnum: u32,
-    attypid: u32
+#[derive(Clone)]
+pub struct Column {
+    pub col_name: String,
+    pub attnum: u32,
+    pub attypid: u32
 }
 
 impl Column {
@@ -20,15 +21,16 @@ impl Column {
 }
 
 pub struct TableMeta {
+    #[allow(unused)]
     table_name: String,
-    encrypted_columns: Vec<Column>,
-    encrypted_index_columns: Vec<Column>
+    pub encrypted_columns: Vec<Column>,
+    pub encrypted_index_columns: Vec<Column>
 }
 
 impl TableMeta {
     fn new(table_name: String, encrypted_columns: Vec<Column>, encrypted_index_columns: Vec<Column>) -> Self {
         Self{
-            table_name,
+            table_name: table_name,
             encrypted_columns,
             encrypted_index_columns
         }
@@ -64,7 +66,7 @@ impl ConnectInfo {
 }
 
 
-pub static mut TABLE_MATES: Option<Mutex<Box<HashMap<String, Box<TableMeta>>>>> = None;
+pub static mut TABLE_MATES: Option<Mutex<Box<HashMap<String, Arc<TableMeta>>>>> = None;
 pub static mut CONN_INFO: Option<Box<ConnectInfo>> = None;
 
 
@@ -72,6 +74,9 @@ pub fn update_metadata(table_name: &str) -> Result<()> {
     match unsafe { TABLE_MATES.as_ref() } {
         Some(mutex_table) => {
             let mut table = mutex_table.lock().unwrap();
+            if table.contains_key(table_name) {
+                return Ok(());
+            }
             let conn_info = unsafe { CONN_INFO.as_ref().unwrap() };
 
             let mut client = Client::connect(
@@ -104,10 +109,23 @@ pub fn update_metadata(table_name: &str) -> Result<()> {
                 encrypted_index_columns.push(col);
             }
 
-            table.insert(table_name.to_string(), Box::new(TableMeta::new(table_name.to_string(), encrypted_columns, encrypted_index_columns)));
+            table.insert(table_name.to_string(), Arc::new(TableMeta::new(table_name.to_string(), encrypted_columns, encrypted_index_columns)));
         },
         None => return Err(Error::NotInitialize),
     };
 
     Ok(())
+}
+
+
+pub fn get_table_meta(table_name: &str) -> Result<Arc<TableMeta>> {
+    update_metadata(table_name)?;
+    match unsafe { TABLE_MATES.as_ref() } {
+        Some(mutex_table) => {
+            let table = mutex_table.lock().unwrap();
+            let table_meta = table.get(table_name).unwrap();
+            return Ok((*table_meta).clone());
+        },
+        None => return Err(Error::NotInitialize),
+    };
 }
