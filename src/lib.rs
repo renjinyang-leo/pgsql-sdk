@@ -1,9 +1,9 @@
 use std::{collections::HashMap, ffi::{c_char, CString}, sync::{Arc, Mutex}};
 use metadata::{ConnectInfo, CONN_INFO, TABLE_MATES, TableMeta};
-mod metadata;
-mod rewrite;
+pub mod metadata;
+pub mod rewrite;
 mod crypto;
-mod error;
+pub mod error;
 
 #[no_mangle]
 pub extern "C" fn init(c_host: *const c_char, c_port: *const c_char, c_username: *const c_char, c_password: *const c_char, c_database: *const c_char) -> bool {

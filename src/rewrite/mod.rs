@@ -10,8 +10,9 @@ pub fn rewrite_sql(sql: &str) -> Result<String> {
     let check_create = Regex::new(r"(?i)create table").unwrap();
     let check_sql_num = Regex::new(r";").unwrap();
     if check_create.is_match(sql) {
-        if check_sql_num.split(sql).collect::<Vec<&str>>().len() == 1 {
-            let rewrite_sql = create_stmt::rewrite_create_stmt_sql(sql)?;
+        let v = check_sql_num.split(sql).collect::<Vec<&str>>();
+        if v.len() == 2 {
+            let rewrite_sql = create_stmt::rewrite_create_stmt_sql(v[0])?;
             return Ok(rewrite_sql);
         }
         return Err(Error::RewriteFailed);

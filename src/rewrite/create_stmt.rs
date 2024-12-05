@@ -13,7 +13,7 @@ lazy_static! {
 }
 
 pub fn rewrite_create_stmt_sql(sql: &str) -> Result<String> {
-    if let Some((_, columns_part)) = sql.split_once('(') {
+    if let Some((table_name_part, columns_part)) = sql.split_once('(') {
         if let Some(columns_part) = columns_part.strip_suffix(')') {
             let columns = columns_part.split(',').map(|col_desc| col_desc.trim()).collect::<Vec<&str>>();
             let mut rewrite_failed = false;
@@ -37,7 +37,8 @@ pub fn rewrite_create_stmt_sql(sql: &str) -> Result<String> {
             if rewrite_failed {
                 return Err(Error::RewriteFailed);
             }
-            return Ok(format!("CREATE TABLE {}({})", sql.split_whitespace().next().unwrap(), modified_columns.join(", ")));
+            let split_keywords: Vec<&str> = table_name_part.split_whitespace().collect();
+            return Ok(format!("CREATE TABLE {}({});", split_keywords[2], modified_columns.join(", ")));
         } else {
             return Err(Error::RewriteFailed);
         }

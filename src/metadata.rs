@@ -69,7 +69,6 @@ impl ConnectInfo {
 pub static mut TABLE_MATES: Option<Mutex<Box<HashMap<String, Arc<TableMeta>>>>> = None;
 pub static mut CONN_INFO: Option<Box<ConnectInfo>> = None;
 
-
 pub fn update_metadata(table_name: &str) -> Result<()> {
     match unsafe { TABLE_MATES.as_ref() } {
         Some(mutex_table) => {
