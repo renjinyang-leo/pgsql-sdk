@@ -1,7 +1,7 @@
 use crate::error::{Result, Error};
 use pg_parse::ast::{ConstValue, List, Node, SelectStmt};
 use crate::metadata::*;
-use crate::crypto::encode_ciphertext;
+use crate::crypto::{int64_to_ciphertext, varchar_to_ciphertext};
 
 pub fn rewrite_insert_stmt_sql(parse_sql: &Node) -> Result<String> {
     match *parse_sql {
@@ -34,12 +34,12 @@ pub fn rewrite_insert_stmt_sql(parse_sql: &Node) -> Result<String> {
                                         match &items[index_col.attnum as usize] {
                                             Node::A_Const(ConstValue::Integer(int64_value)) => {
                                                 if index_col.attypid == 20 {
-                                                    ciphertext.push(encode_ciphertext(*int64_value)?);
+                                                    ciphertext.push(int64_to_ciphertext(*int64_value)?);
                                                 }
                                             },
                                             Node::A_Const(ConstValue::String(varchar_value)) => {
                                                 if index_col.attypid == 1043 {
-                                                    ciphertext.push(encode_ciphertext((*varchar_value).clone())?);
+                                                    ciphertext.push(varchar_to_ciphertext((*varchar_value).clone())?);
                                                 }
                                             },
                                             _ => return Err(Error::RewriteFailed),

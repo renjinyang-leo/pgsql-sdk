@@ -1,11 +1,6 @@
-use crate::error::{Error, Result};
+mod ciphertext_int64;
+mod ciphertext_varchar;
+mod gore;
 
-
-pub fn encode_ciphertext<T>(input: T) -> Result<String> {
-    if std::any::type_name::<T>() == "i64" {
-        todo!();
-    } else if std::any::type_name::<T>() == "String" {
-        todo!();
-    }
-    return Err(Error::NoMatchEncryptType);
-}
+pub use ciphertext_int64::int64_to_ciphertext;
+pub use ciphertext_varchar::varchar_to_ciphertext;
