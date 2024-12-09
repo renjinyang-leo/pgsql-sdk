@@ -5,12 +5,14 @@ use failure::Fail;
 
 #[derive(Fail, Debug)]
 pub enum Error {
+    Default,
     PGErr(#[cause] postgres::Error),
     FFI(#[cause] ffi::IntoStringError),
     Parse(#[cause] pg_parse::Error),
     RewriteFailed,
     NotInitialize,
-    EncryptFailed
+    EncryptFailed,
+    CiphertextCompareFailed
 }
 
 impl From<ffi::IntoStringError> for Error {

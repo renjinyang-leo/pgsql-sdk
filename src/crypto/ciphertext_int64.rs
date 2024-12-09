@@ -17,7 +17,30 @@ impl CiphertextInt64 {
     }
 }
 
-pub fn int64_to_ciphertext(value: i64) -> Result<String> {
+fn encode_ciphertext_int64(ciphertext: &CiphertextInt64) -> String {
+    let mut encoded_str = String::new();
+    for byte in ciphertext.buf.iter() {
+        encoded_str.push_str(&format!("{:02x}", byte));
+    }
+    encoded_str
+}
+
+#[allow(unused)]
+fn decode_ciphertext_int64(encoded_str: &str) -> Result<CiphertextInt64> {
+    if encoded_str.len()!= INT64_BUF_LEN * 2 {
+        return Err(Error::Default);
+    }
+    let mut buf = [0; INT64_BUF_LEN];
+    for i in (0..encoded_str.len()).step_by(2) {
+        match u8::from_str_radix(&encoded_str[i..i + 2], 16) {
+            Ok(byte) => buf[i / 2] = byte,
+            Err(_) => return Err(Error::Default),
+        }
+    }
+    Ok(CiphertextInt64{buf})
+}
+
+pub fn int64_to_gore_ciphertext(value: i64) -> Result<String> {
     let mut ctxt = CiphertextInt64::new();
     let i64_size = std::mem::size_of::<i64>();
     let positive = value >= 0;
@@ -41,5 +64,9 @@ pub fn int64_to_ciphertext(value: i64) -> Result<String> {
     code[i64_size..].copy_from_slice(range);
     ore_encrypt_buf(&mut ctxt.buf, &code, positive)?;
 
-    return Err(Error::EncryptFailed);
+    Ok(encode_ciphertext_int64(&ctxt))
+}
+
+pub fn in64_to_aes_ciphertext(value: i64) -> Result<String> {
+    todo!();
 }

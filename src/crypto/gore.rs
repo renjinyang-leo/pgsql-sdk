@@ -47,7 +47,6 @@ pub fn ore_encrypt_buf(buf: &mut [u8], code: &[u8], positive: bool) -> Result<()
 
         aes_ecb_encrypt(&prf_input_buf, &mut prf_output_buf)?;
 
-        // 模拟mpz_import，将字节切片转换为BigUint，这里简单示例，实际可能更复杂
         ctxt_block = BigUint::from_bytes_be(&prf_output_buf[0..1]);
 
         if positive {
@@ -79,4 +78,60 @@ pub fn ore_encrypt_buf(buf: &mut [u8], code: &[u8], positive: bool) -> Result<()
     }
 
     Ok(())
+}
+
+
+#[allow(unused)]
+fn ciphertext_compare(buf_1: &[u8], buf_2: &[u8]) -> Result<i32> {
+    let nbits1 = (buf_1.len() as u32 / OUT_BLK_LEN) * 8;
+    let nbits2 = (buf_2.len() as u32 / OUT_BLK_LEN) * 8;
+    let nbits = if nbits1 <= nbits2 { nbits1 } else { nbits2 };
+
+    let ctxt1_val = BigUint::from_bytes_be(buf_1);
+    let ctxt2_val = BigUint::from_bytes_be(buf_2);
+
+    let mut modulus = BigUint::from(1u32);
+    modulus <<= OUT_BLK_LEN;
+
+    let mut block_mask1 = modulus.clone();
+    block_mask1 -= BigUint::from(1u32);
+    block_mask1 <<= (nbits1 - 1) * OUT_BLK_LEN;
+
+    let mut block_mask2 = modulus.clone();
+    block_mask2 -= BigUint::from(1u32);
+    block_mask2 <<= (nbits2 - 1) * OUT_BLK_LEN;
+
+    let mut tmp1;
+    let mut tmp2;
+
+    let mut res = 0;
+    for i in 0..nbits {
+        tmp1 = &ctxt1_val & &block_mask1;
+        tmp2 = &ctxt2_val & &block_mask2;
+
+        tmp1 >>= (nbits1 - i - 1) * OUT_BLK_LEN;
+        tmp2 >>= (nbits2 - i - 1) * OUT_BLK_LEN;
+
+        tmp1 -= tmp2;
+        tmp1 %= &modulus;
+
+        if tmp1 == BigUint::from(2u32) {
+            return Err(Error::CiphertextCompareFailed);
+        }
+
+        let mut cmp = tmp1.cmp(&BigUint::from(0u32));
+        if cmp != std::cmp::Ordering::Equal {
+            cmp = tmp1.cmp(&BigUint::from(1u32));
+            res = if cmp == std::cmp::Ordering::Equal { 1 } else { -1 };
+            break;
+        }
+        block_mask1 >>= OUT_BLK_LEN;
+        block_mask2 >>= OUT_BLK_LEN;
+    }
+
+    if res == 0 && buf_1.len() != buf_2.len() {
+        res = if buf_1.len() > buf_2.len() { 1 } else { -1 };
+    }
+
+    Ok(res)
 }
