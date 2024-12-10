@@ -2,7 +2,7 @@ use std::{collections::HashMap, ffi::{c_char, CString}, sync::{Arc, Mutex}};
 use metadata::{ConnectInfo, CONN_INFO, TABLE_MATES, TableMeta};
 pub mod metadata;
 pub mod rewrite;
-mod crypto;
+pub mod crypto;
 pub mod error;
 
 #[no_mangle]

@@ -5,8 +5,8 @@ const INT64_BUF_LEN: usize = 18;
 const INT64_CODE_LEN: usize = 9;
 type Byte = u8;
 #[derive(Debug)]
-struct CiphertextInt64 {
-    buf: [Byte; INT64_BUF_LEN],
+pub struct CiphertextInt64 {
+    pub buf: [Byte; INT64_BUF_LEN],
 }
 
 impl CiphertextInt64 {
@@ -26,7 +26,7 @@ fn encode_ciphertext_int64(ciphertext: &CiphertextInt64) -> String {
 }
 
 #[allow(unused)]
-fn decode_ciphertext_int64(encoded_str: &str) -> Result<CiphertextInt64> {
+pub fn decode_ciphertext_int64(encoded_str: &str) -> Result<CiphertextInt64> {
     if encoded_str.len()!= INT64_BUF_LEN * 2 {
         return Err(Error::Default);
     }

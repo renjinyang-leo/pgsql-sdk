@@ -611,6 +611,7 @@ dependencies = [
  "openssl",
  "pg_parse",
  "postgres",
+ "rand",
  "regex",
 ]
 

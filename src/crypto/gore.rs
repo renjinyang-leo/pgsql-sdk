@@ -6,22 +6,15 @@ use crate::error::{Error, Result};
 const OUT_BLK_LEN: u32 = 2;
 
 fn aes_ecb_encrypt(plaintext: &[u8], mut ciphertext: &mut [u8]) -> Result<()> {
-        let key = b"0123456789abcdef0123456789abcdef";
+        let key = b"0123456789abcdef";
         let mut encryptor = match Crypter::new(Cipher::aes_128_ecb(), Mode::Encrypt, key, None) {
             Ok(c) => c,
             Err(_) => return Err(Error::EncryptFailed)
         };
         encryptor.pad(false);
     
-        match encryptor.update(plaintext, &mut ciphertext) {
-            Ok(_) => {}
-            Err(_) => return Err(Error::EncryptFailed)
-        }
-
-        match encryptor.finalize(&mut ciphertext) {
-            Ok(_) => {}
-            Err(_) => return Err(Error::EncryptFailed)
-        }
+        let count = encryptor.update(plaintext, &mut ciphertext).unwrap();
+        encryptor.finalize(&mut ciphertext[count..]).unwrap();
         Ok(())
 }
 
@@ -31,8 +24,9 @@ pub fn ore_encrypt_buf(buf: &mut [u8], code: &[u8], positive: bool) -> Result<()
     block_mask <<= OUT_BLK_LEN;
     block_mask -= BigUint::from(1u32);
 
-    let mut prf_input_buf = vec![0; code.len()];
-    let mut prf_output_buf = vec![0; code.len()];
+    let padding_len = (code.len() + 15) / 16 * 16;
+    let mut prf_input_buf = vec![0; padding_len];
+    let mut prf_output_buf = vec![0; padding_len + 16];
 
 
     let code_buf = code.to_vec();
@@ -43,9 +37,10 @@ pub fn ore_encrypt_buf(buf: &mut [u8], code: &[u8], positive: bool) -> Result<()
     let offset = (8 - (nbits % 8)) % 8;
     for i in 0..nbits {
         let byteind = code.len() as u32 - 1 - (i + offset) / 8;
-        let mask = code_buf[byteind as usize] & (1 << ((7 - (i + offset)) % 8));
+        let mask = code_buf[byteind as usize] & (1u8 << (((7i32 - (i + offset) as i32) % 8 + 8) % 8));
 
-        aes_ecb_encrypt(&prf_input_buf, &mut prf_output_buf)?;
+        let tmp_padding_len = (code.len() - byteind as usize + 15) / 16 * 16;
+        aes_ecb_encrypt(&prf_input_buf[0..tmp_padding_len], &mut prf_output_buf[0..tmp_padding_len + 16])?;
 
         ctxt_block = BigUint::from_bytes_be(&prf_output_buf[0..1]);
 
@@ -82,7 +77,7 @@ pub fn ore_encrypt_buf(buf: &mut [u8], code: &[u8], positive: bool) -> Result<()
 
 
 #[allow(unused)]
-fn ciphertext_compare(buf_1: &[u8], buf_2: &[u8]) -> Result<i32> {
+pub fn ciphertext_compare(buf_1: &[u8], buf_2: &[u8]) -> Result<i32> {
     let nbits1 = (buf_1.len() as u32 / OUT_BLK_LEN) * 8;
     let nbits2 = (buf_2.len() as u32 / OUT_BLK_LEN) * 8;
     let nbits = if nbits1 <= nbits2 { nbits1 } else { nbits2 };
@@ -112,6 +107,7 @@ fn ciphertext_compare(buf_1: &[u8], buf_2: &[u8]) -> Result<i32> {
         tmp1 >>= (nbits1 - i - 1) * OUT_BLK_LEN;
         tmp2 >>= (nbits2 - i - 1) * OUT_BLK_LEN;
 
+        while (tmp2 > tmp1) { tmp1 += &modulus; }
         tmp1 -= tmp2;
         tmp1 %= &modulus;
 
