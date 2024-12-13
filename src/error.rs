@@ -1,3 +1,4 @@
+use core::str;
 use std::fmt::{self, Debug};
 use std::ffi;
 use failure::Fail;
@@ -9,6 +10,7 @@ pub enum Error {
     PGErr(#[cause] postgres::Error),
     FFI(#[cause] ffi::IntoStringError),
     Parse(#[cause] pg_parse::Error),
+    Utf8(#[cause] str::Utf8Error),
     RewriteFailed,
     NotInitialize,
     EncryptFailed,
@@ -30,6 +32,12 @@ impl From<postgres::Error> for Error {
 impl From<pg_parse::Error> for Error {
     fn from(err: pg_parse::Error) -> Error {
         Error::Parse(err)
+    }
+}
+
+impl From<str::Utf8Error> for Error {
+    fn from(err: str::Utf8Error) -> Error {
+        Error::Utf8(err)
     }
 }
 
