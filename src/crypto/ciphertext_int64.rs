@@ -18,26 +18,22 @@ impl CiphertextInt64 {
 }
 
 fn encode_ciphertext_int64(ciphertext: &CiphertextInt64) -> String {
-    let mut encoded_str = String::new();
-    for byte in ciphertext.buf.iter() {
-        encoded_str.push_str(&format!("{:02x}", byte));
-    }
-    encoded_str
+    hex::encode(&ciphertext.buf)
 }
 
 #[allow(unused)]
 pub fn decode_ciphertext_int64(encoded_str: &str) -> Result<CiphertextInt64> {
-    if encoded_str.len()!= INT64_BUF_LEN * 2 {
+    if let Ok(buf) = hex::decode(encoded_str) {
+        if buf.len() == INT64_BUF_LEN {
+            let mut arr = [0; INT64_BUF_LEN];
+            arr.copy_from_slice(&buf);
+            return Ok(CiphertextInt64 { buf: arr });
+        } else {
+            return Err(Error::Default);
+        }
+    } else {
         return Err(Error::Default);
     }
-    let mut buf = [0; INT64_BUF_LEN];
-    for i in (0..encoded_str.len()).step_by(2) {
-        match u8::from_str_radix(&encoded_str[i..i + 2], 16) {
-            Ok(byte) => buf[i / 2] = byte,
-            Err(_) => return Err(Error::Default),
-        }
-    }
-    Ok(CiphertextInt64{buf})
 }
 
 pub fn int64_to_gore_ciphertext(value: i64) -> Result<String> {

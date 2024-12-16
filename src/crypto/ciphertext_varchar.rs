@@ -1,6 +1,7 @@
 use core::str;
+use hex;
 
-use crate::error::Result;
+use crate::error::{Result, Error};
 use crate::crypto::gore::ore_encrypt_buf;
 
 const VARCHAR_CIPHER_PREFIX: usize = 1;
@@ -18,15 +19,15 @@ impl CiphertextVarChar {
     }
 }
 
-fn encode_ciphertext_varchar(ctext: &CiphertextVarChar) -> Result<String> {
-    let code = str::from_utf8(&ctext.buf).map(String::from)?;
-    Ok(code)
+fn encode_ciphertext_varchar(ciphertext: &CiphertextVarChar) -> Result<String> {
+    Ok(hex::encode(&ciphertext.buf))
 }
 
 #[allow(unused)]
-fn decode_ciphertext_varchar(s: &str) -> CiphertextVarChar {
-    CiphertextVarChar {
-        buf: s.as_bytes().to_vec(),
+pub fn decode_ciphertext_varchar(encoded_str: &str) -> Result<CiphertextVarChar> {
+    match hex::decode(encoded_str) {
+        Ok(buf) => Ok(CiphertextVarChar { buf }),
+        Err(_) => Err(Error::EncryptFailed),
     }
 }
 
