@@ -1,5 +1,6 @@
 use core::str;
 use hex;
+use openssl::symm::{Cipher, Crypter, Mode};
 
 use crate::error::{Result, Error};
 use crate::crypto::gore::ore_encrypt_buf;
@@ -75,6 +76,33 @@ pub fn varchar_to_gore_ciphertext(value: String) -> Result<String> {
     Ok(encode_ciphertext_varchar(&ctxt)?)
 }
 
-pub fn varchar_to_aes_ciphertext(value: String) -> Result<String> {
-    todo!();
+pub fn varchar_to_aes_ciphertext(value: &str) -> Result<String> {
+    let key = b"0123456789abcdef";
+    let cipher = Cipher::aes_128_cbc();
+    let mut crypter = Crypter::new(cipher, Mode::Encrypt, key, None).unwrap();
+    crypter.pad(true);
+
+    let mut buffer = [0; 1024];
+    let mut count = crypter.update(value.as_bytes(), &mut buffer).unwrap();
+    count += crypter.finalize(&mut buffer[count..]).unwrap();
+
+    Ok(hex::encode(&buffer[..count]))
+}
+
+#[allow(unused)]
+pub fn varchar_aes_decrypt(encrypted_value: &str) -> Result<String> {
+    let key = b"0123456789abcdef";
+
+    let encrypted_data = hex::decode(encrypted_value).unwrap();
+    let cipher = Cipher::aes_128_cbc();
+    let mut crypter = Crypter::new(cipher, Mode::Decrypt, key, None).unwrap();
+    crypter.pad(true);
+
+    let mut decrypted_data = Vec::new();
+    let mut buffer = [0; 1024];
+    let mut count = crypter.update(&encrypted_data, &mut buffer).unwrap();
+    count += crypter.finalize(&mut buffer[count..]).unwrap();
+    decrypted_data.extend_from_slice(&buffer[..count]);
+
+    Ok(String::from_utf8(decrypted_data).unwrap())
 }

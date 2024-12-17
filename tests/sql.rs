@@ -4,7 +4,7 @@ mod tests {
     use std::iter;
 
     use pgsql_sdk::rewrite::rewrite_sql;
-    use pgsql_sdk::crypto::{int64_to_gore_ciphertext, decode_ciphertext_int64, ciphertext_compare, varchar_to_gore_ciphertext, decode_ciphertext_varchar};
+    use pgsql_sdk::crypto::{int64_to_gore_ciphertext, decode_ciphertext_int64, ciphertext_compare, varchar_to_gore_ciphertext, decode_ciphertext_varchar, int64_to_aes_ciphertext, varchar_to_aes_ciphertext, int64_aes_decrypt, varchar_aes_decrypt};
     use rand::Rng;
 
     fn random_string() -> String {
@@ -68,6 +68,27 @@ mod tests {
             };
 
             assert_eq!(expect, ciphertext_compare(&ciphertext_1.buf, &ciphertext_2.buf).unwrap());
+        }
+    }
+
+    #[test]
+    fn test_ase_int64() {
+        let mut rng = rand::thread_rng();
+        for _ in 0..1000 {
+            let num: i64 = rng.gen();
+            let ciphertext_str = int64_to_aes_ciphertext(num).unwrap();
+            let decryted_num = int64_aes_decrypt(&ciphertext_str).unwrap();
+            assert_eq!(num, decryted_num);
+        }
+    }
+
+    #[test]
+    fn test_ase_varchar() {
+        for _ in 0..1000 {
+            let s = random_string();
+            let ciphertext_str = varchar_to_aes_ciphertext(&s).unwrap();
+            let decryted_s = varchar_aes_decrypt(&ciphertext_str).unwrap();
+            assert_eq!(s, decryted_s);
         }
     }
 }

@@ -4,7 +4,7 @@ use crate::error::{Result, Error};
 use pg_parse::ast::{ConstValue, List, Node, SelectStmt};
 use regex::Regex;
 use crate::metadata::*;
-use crate::crypto::{int64_to_gore_ciphertext, varchar_to_gore_ciphertext, in64_to_aes_ciphertext, varchar_to_aes_ciphertext};
+use crate::crypto::{int64_to_gore_ciphertext, varchar_to_gore_ciphertext, int64_to_aes_ciphertext, varchar_to_aes_ciphertext};
 
 pub fn rewrite_insert_stmt_sql(parse_sql: &Node) -> Result<String> {
     match *parse_sql {
@@ -78,13 +78,13 @@ pub fn rewrite_insert_stmt_sql(parse_sql: &Node) -> Result<String> {
                                         match &item {
                                             Node::A_Const(ConstValue::Integer(int64_value)) => {
                                                 if *attpid == 20 {
-                                                    value_list.push(in64_to_aes_ciphertext(*int64_value)?);
+                                                    value_list.push(int64_to_aes_ciphertext(*int64_value)?);
                                                     todo!("AES encrypt the data in the columns");
                                                 }
                                             },
                                             Node::A_Const(ConstValue::String(varchar_value)) => {
                                                 if *attpid == 1043 {
-                                                    value_list.push(varchar_to_aes_ciphertext((*varchar_value).clone())?);
+                                                    value_list.push(varchar_to_aes_ciphertext(varchar_value)?);
                                                     todo!("AES encrypt the data in the columns");
                                                 }
                                             },
