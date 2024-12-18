@@ -27,6 +27,17 @@ mod tests {
     }
 
     #[test]
+    fn test_rewrite_insert_stmt() {
+        std::env::set_var("CARGO_TEST", "1");
+        let sql = "INSERT INTO T1 (c1, c2) VALUES (20241218, 1912);";
+        let rewrite_sql = rewrite_sql(sql).unwrap();
+        let aes_str = int64_to_aes_ciphertext(20241218).unwrap();
+        let gore_str = int64_to_gore_ciphertext(20241218).unwrap();
+        let expect = format!("INSERT INTO t1 (c1, c2) VALUES ({}, 1912) EINDEX ({});", aes_str, gore_str);
+        assert_eq!(rewrite_sql, expect);
+    }
+
+    #[test]
     fn test_gore_int64() {
         let mut rng = rand::thread_rng();
         for _ in 0..1000 {

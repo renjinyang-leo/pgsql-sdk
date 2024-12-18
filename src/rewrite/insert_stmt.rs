@@ -13,7 +13,7 @@ pub fn rewrite_insert_stmt_sql(parse_sql: &Node) -> Result<String> {
             let table_meta = get_table_meta(&relname)?;
             if table_meta.encrypted_columns.len() != 0 {
                 let mut index_extend = String::new();
-                let mut rewrite_sql = parse_sql.to_string().strip_suffix(";").unwrap().to_string();
+                let mut rewrite_sql = parse_sql.to_string();
 
                 let mut encrypted_col_map: HashMap<usize, u32> = HashMap::new();
                 for index_col in &table_meta.encrypted_columns {
@@ -21,15 +21,8 @@ pub fn rewrite_insert_stmt_sql(parse_sql: &Node) -> Result<String> {
                 }
                 
                 if table_meta.encrypted_index_columns.len() != 0 {
-                    index_extend += " INDEX(";
+                    index_extend += " EINDEX (";
                     let mut ciphertext_vec = Vec::<String>::new();
-                    if let Some(cols) = stmt.cols.as_ref() {
-                        if cols.len() != 0 {
-                            return Err(Error::RewriteFailed);
-                        }
-                    } else {
-                        return Err(Error::RewriteFailed);
-                    }
                     match stmt.select_stmt.as_ref().unwrap().as_ref() {
                         Node::SelectStmt(SelectStmt {
                             values_lists: Some(values_lists),
@@ -39,7 +32,7 @@ pub fn rewrite_insert_stmt_sql(parse_sql: &Node) -> Result<String> {
                             match values {
                                 Node::List(List { items }) => {
                                     for index_col in &table_meta.encrypted_index_columns {
-                                        match &items[index_col.attnum as usize] {
+                                        match &items[index_col.attnum as usize - 1] {
                                             Node::A_Const(ConstValue::Integer(int64_value)) => {
                                                 if index_col.attypid == 20 {
                                                     ciphertext_vec.push(int64_to_gore_ciphertext(*int64_value)?);
@@ -74,18 +67,16 @@ pub fn rewrite_insert_stmt_sql(parse_sql: &Node) -> Result<String> {
                         match values {
                             Node::List(List { items }) => {
                                 for (index, item) in items.iter().enumerate() {
-                                    if let Some(attpid) = encrypted_col_map.get(&index) {
+                                    if let Some(attpid) = encrypted_col_map.get(&(index + 1)) {
                                         match &item {
                                             Node::A_Const(ConstValue::Integer(int64_value)) => {
                                                 if *attpid == 20 {
                                                     value_list.push(int64_to_aes_ciphertext(*int64_value)?);
-                                                    todo!("AES encrypt the data in the columns");
                                                 }
                                             },
                                             Node::A_Const(ConstValue::String(varchar_value)) => {
                                                 if *attpid == 1043 {
                                                     value_list.push(varchar_to_aes_ciphertext(varchar_value)?);
-                                                    todo!("AES encrypt the data in the columns");
                                                 }
                                             },
                                             _ => return Err(Error::RewriteFailed),
