@@ -8,7 +8,7 @@ mod tests {
     use rand::Rng;
 
     fn random_string() -> String {
-        let length = rand::thread_rng().gen_range(1..11);
+        let length = rand::thread_rng().gen_range(1..100);
         let mut rng = rand::thread_rng();
         iter::repeat(())
        .map(|()| {

@@ -7,7 +7,7 @@ const OUT_BLK_LEN: u32 = 2;
 
 fn aes_ecb_encrypt(plaintext: &[u8], mut ciphertext: &mut [u8]) -> Result<()> {
         let key = b"0123456789abcdef";
-        let mut encryptor = match Crypter::new(Cipher::aes_128_ecb(), Mode::Encrypt, key, None) {
+        let mut encryptor = match Crypter::new(Cipher::aes_128_cbc(), Mode::Encrypt, key, None) {
             Ok(c) => c,
             Err(_) => return Err(Error::EncryptFailed)
         };
@@ -42,7 +42,7 @@ pub fn ore_encrypt_buf(buf: &mut [u8], code: &[u8], positive: bool) -> Result<()
         let tmp_padding_len = (code.len() - byteind as usize + 15) / 16 * 16;
         aes_ecb_encrypt(&prf_input_buf[0..tmp_padding_len], &mut prf_output_buf[0..tmp_padding_len + 16])?;
 
-        ctxt_block = BigUint::from_bytes_be(&prf_output_buf[0..1]);
+        ctxt_block = BigUint::from_bytes_be(&prf_output_buf[tmp_padding_len-1..tmp_padding_len]);
 
         if positive {
             if mask > 0 {

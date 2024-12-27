@@ -34,7 +34,7 @@ pub fn decode_ciphertext_varchar(encoded_str: &str) -> Result<CiphertextVarChar>
 
 pub fn varchar_to_gore_ciphertext(value: String) -> Result<String> {
     let length = value.len();
-    let max_distance: u8 = 255;
+    let max_distance: u8 = 7;
     let mut cnt: u8 = 0;
     while cnt <= max_distance {
         let i = cnt as usize / 8;
